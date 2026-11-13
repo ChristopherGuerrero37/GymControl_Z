@@ -20,11 +20,17 @@ RN-04 (Cupo Limitado y Sin Duplicados): Un socio no puede reservar la misma clas
 
 RN-05 (Reserva Solo para Socios Activos): Si la membresía del socio está vencida, el sistema debe bloquear el botón de reserva e indicarle que debe renovar su plan primero.
 
-RN-06 (Cancelación con Anticipación): Si el socio cancela su reserva con al menos 2 horas de anticipación, el cupo se libera automáticamente para otro cliente.
+RN-06: Restricción de Reservas para Socios Activos
+
+- Solo los socios con estado `activa` o `por_vencer` pueden reservar cupos en clases colectivas (ya sea desde su portal móvil o inscritos manualmente por el recepcionista).
+- Si un socio está `vencido`, el sistema bloquea la inscripción y solicita renovar su plan primero.
 
 ### Lógica de Promociones y Referidos
 
-RN-07 (Vigencia de Promociones): Una promoción expirada (fecha_fin < hoy) no se puede aplicar ni mostrar como disponible en el portal del cliente.
+RN-07: Control Riguroso de Cupos y Duplicados
+
+- Un socio no puede ser inscrito en la misma clase más de una vez, sin importar si la reserva se hace desde el portal cliente o desde recepción.
+- La reserva se confirma únicamente si `cupos_disponibles > 0`, reduciendo en 1 el contador disponible.
 
 RN-08 (Límite de Uso de Código): Un socio solo puede canjear una vez la oferta "Trae a un amigo" por cada cliente nuevo registrado que presente su código.
 
@@ -81,3 +87,19 @@ Fórmulas que el sistema debe aplicar siempre igual (totales, impuestos, fechas 
 | **RN-14** | **Ingresos del mes** = Suma de la columna `monto` en la tabla `pagos` donde `MONTH(fecha_pago) = mes_actual` y `YEAR(fecha_pago) = anio_actual` | 10 renovaciones de $25.00 en el mes = $250.00 de ingreso mensual.                                         |
 | **RN-15** | **Cupos disponibles de clase** = `cupo_maximo` - (conteo de registros en `reservas` con estado `confirmada` o `completada`)                     | Clase de Spinning con `cupo_maximo` = 15 y 12 reservas activas = 3 cupos disponibles.                     |
 | **RN-16** | **Porcentaje de ocupación de clase** = `(reservas_confirmadas / cupo_maximo) * 100`                                                             | 12 reservas en clase de 15 cupos = 80% de ocupación.                                                      |
+
+---
+
+## Otras Reglas
+
+RN-17 (QR Dinámico Anti-Fraude): El código QR del portal del socio se regenera cada 30 segundos incluyendo una marca de tiempo (timestamp). El verificador rechaza códigos cuya marca de tiempo tenga más de 60 segundos de antigüedad.
+
+RN-18 (Revocación Instantánea): Si un socio tiene acceso_revocado = true, su estado pasa a suspendida de inmediato y el verificador bloquea su entrada mostrando "CREDENCIAL REVOCADA — Contactar Administración", sin importar si tiene días vigentes.
+
+RN-19 (Control de Acceso por Roles - RBAC):
+
+dueno: Acceso total (finanzas, reportes, socios, clases, usuarios).
+
+recepcion: Gestión de socios, pagos, verificador de acceso y clases (sin acceso a métricas financieras globales ni configuración de usuarios).
+
+entrenador: Acceso exclusivo al módulo de clases asignadas a su nombre y listado de socios inscritos en ellas.

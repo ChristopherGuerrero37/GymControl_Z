@@ -70,12 +70,13 @@ Cada historia es una unidad de trabajo con el agente: un pedido, sus pruebas y u
 ### HU-05 Verificador Rápido de Acceso por DUI
 
 **Como** recepcionista, **quiero** digitar o buscar el DUI de un socio en una pantalla de acceso directo, **para** verificar si su membresía está activa en segundos durante horas pico.
+**Como** admin, **puedo** revocar una credencial al instante (pérdida, robo, conducta).
 
 **Criterios de aceptación:**
 
 - Al ingresar el DUI o nombre en el buscador, la pantalla muestra de inmediato un banner de gran tamaño:
-  - **Verde ("ACCESO PERMITIDO"):** Si la membresía está `activa` o `por_vencer`.
-  - **Rojo ("MEMBRESÍA VENCIDA"):** Si la `fecha_vencimiento` es menor a la fecha actual (RN-02).
+- **Verde ("ACCESO PERMITIDO"):** Si la membresía está `activa` o `por_vencer`.
+- **Rojo ("MEMBRESÍA VENCIDA"):** Si la `fecha_vencimiento` es menor a la fecha actual (RN-02).
 - Muestra los días restantes calculados exactamente en tiempo real (RN-13).
 
 **Reglas involucradas:** RN-02, RN-13
@@ -101,6 +102,9 @@ Cada historia es una unidad de trabajo con el agente: un pedido, sus pruebas y u
 ### HU-07 Portal del Cliente y Carnet Digital QR
 
 **Como** cliente/socio, **quiero** ingresar desde mi teléfono a mi portal personal por mi DUI o enlace único, **para** consultar mi carnet digital con código QR y mis días restantes.
+**Como** socio, mi QR es dinámico (rota cada 30-60 s) para evitar que alguien fotografíe y comparta el código.
+
+Como admin, puedo revocar una credencial al instante (pérdida, robo, conducta).
 
 **Criterios de aceptación:**
 
@@ -124,6 +128,19 @@ Cada historia es una unidad de trabajo con el agente: un pedido, sus pruebas y u
 - El administrador puede cancelar o marcar asistencia a las clases agendadas.
 
 **Reglas involucradas:** RN-15, RN-16
+
+### HU-08B Inscripción manual de socios a clases desde recepción
+
+**Como** recepcionista o dueño, **quiero** poder inscribir manualmente a un socio en una clase colectiva (ej. Spinning) desde el panel administrativo, **para** ayudar a clientes que no tienen internet o prefieren hacer su reserva en persona en recepción.
+
+**Criterios de aceptación:**
+
+- En el Gestor de Clases del panel administrativo, existe un botón o selector para "Inscribir socio" buscando por DUI o nombre.
+- El sistema valida exactamente igual que en el portal público: el socio debe tener membresía `activa` o `por_vencer` y la clase debe tener `cupos_disponibles > 0` (RN-06, RN-07).
+- Al confirmar la inscripción desde recepción, se descuenta 1 cupo en tiempo real y el socio aparece en la lista de asistentes de esa clase.
+- El administrador también puede registrar la compra de un plan e inscribir al socio en una clase en el mismo flujo presencial.
+
+**Reglas involucradas:** RN-01, RN-06, RN-07, RN-15
 
 ---
 
@@ -169,3 +186,9 @@ Cada historia es una unidad de trabajo con el agente: un pedido, sus pruebas y u
 - Muestra el porcentaje global de ocupación de las clases colectivas (RN-16).
 
 **Reglas involucradas:** RN-14, RN-16
+
+---
+
+### HU-12 (Gestión de Permisos por Rol):
+
+**Como** dueño, **quiero** asignar roles específicos (Recepcionista, Entrenador) a mi personal, **para** que cada uno vea únicamente las herramientas correspondientes a su trabajo."
