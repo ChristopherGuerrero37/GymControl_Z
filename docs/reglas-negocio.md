@@ -98,8 +98,6 @@ RN-18 (Revocación Instantánea): Si un socio tiene acceso_revocado = true, su e
 
 RN-19 (Control de Acceso por Roles - RBAC):
 
-dueno: Acceso total (finanzas, reportes, socios, clases, usuarios).
-
-recepcion: Gestión de socios, pagos, verificador de acceso y clases (sin acceso a métricas financieras globales ni configuración de usuarios).
-
-entrenador: Acceso exclusivo al módulo de clases asignadas a su nombre y listado de socios inscritos en ellas.
+- dueno: Acceso total (finanzas, reportes, socios, clases, usuarios).
+- recepcion: Gestión de socios, pagos, verificador de acceso y clases (sin acceso a métricas financieras globales ni configuración de usuarios).
+- entrenador: Acceso exclusivo al módulo de clases asignadas a su nombre y listado de socios inscritos en ellas.

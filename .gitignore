@@ -1,4 +1,10 @@
-backend/
-frontend/
+#Dependencias y entornos
 .env
 node_modules/
+.env.local
+
+#Archivos de compilación y logs
+dist/
+build/
+*.log
+.DS_Store
