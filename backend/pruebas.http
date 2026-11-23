@@ -1,0 +1,396 @@
+### ========================================================
+### GymControl Z - Pruebas HTTP de la API (REST Client)
+### ========================================================
+
+@baseUrl = http://localhost:3000/api
+
+### 1. Estado de la API
+GET {{baseUrl}}/salud
+
+### --------------------------------------------------------
+### HU-01: REGISTRO DE GIMNASIO Y DUEÑO (RN-04)
+### --------------------------------------------------------
+
+### 2. Registro exitoso de gimnasio y administrador (201)
+# @name registroGimnasio
+POST {{baseUrl}}/auth/registro
+Content-Type: application/json
+
+{
+  "nombreGimnasio": "Iron Power Gym",
+  "telefono": "7890-1234",
+  "nombreAdmin": "Carlos Mendoza",
+  "correo": "admin@ironpower.com",
+  "password": "Password123!"
+}
+
+### 3. Registro fallido: Correo ya registrado (409)
+POST {{baseUrl}}/auth/registro
+Content-Type: application/json
+
+{
+  "nombreGimnasio": "Otro Gimnasio",
+  "telefono": "7111-2222",
+  "nombreAdmin": "Roberto Gomez",
+  "correo": "admin@ironpower.com",
+  "password": "Password123!"
+}
+
+### 4. Registro fallido: Datos incompletos o inválidos (400)
+POST {{baseUrl}}/auth/registro
+Content-Type: application/json
+
+{
+  "nombreGimnasio": "A",
+  "correo": "correo-no-valido",
+  "password": "123"
+}
+
+### --------------------------------------------------------
+### HU-02: INICIO Y CIERRE DE SESIÓN (RN-04)
+### --------------------------------------------------------
+
+### 5. Login exitoso (200)
+# @name loginAdmin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "correo": "admin@ironpower.com",
+  "password": "Password123!"
+}
+
+### 6. Login fallido: Contraseña incorrecta (401)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "correo": "admin@ironpower.com",
+  "password": "PasswordErronea"
+}
+
+### 7. Login fallido: Correo no existe (401)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "correo": "noexiste@ironpower.com",
+  "password": "Password123!"
+}
+
+### Guardar token obtenido para las siguientes pruebas
+@authToken = {{loginAdmin.response.body.token}}
+
+### 8. Consultar perfil con token válido (200)
+GET {{baseUrl}}/auth/perfil
+Authorization: Bearer {{authToken}}
+
+### 9. Consultar perfil sin token (401)
+GET {{baseUrl}}/auth/perfil
+
+
+### --------------------------------------------------------
+### HU-03: CONFIGURAR PLANES DE MEMBRESÍA
+### --------------------------------------------------------
+
+### 10. Crear Plan Mensual exitoso (201)
+# @name crearPlanMensual
+POST {{baseUrl}}/planes
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "nombrePlan": "Plan Mensual Completo",
+  "duracionDias": 30,
+  "precio": 25.00,
+  "activo": true
+}
+
+@planId = {{crearPlanMensual.response.body.plan.id}}
+
+### 11. Crear Plan con datos inválidos (400)
+POST {{baseUrl}}/planes
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "nombrePlan": "No",
+  "duracionDias": -5,
+  "precio": -10
+}
+
+### 12. Listar todos los planes del negocio (200)
+GET {{baseUrl}}/planes
+Authorization: Bearer {{authToken}}
+
+### 13. Obtener plan por ID (200)
+GET {{baseUrl}}/planes/{{planId}}
+Authorization: Bearer {{authToken}}
+
+### 14. Editar plan existente (200)
+PUT {{baseUrl}}/planes/{{planId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "nombrePlan": "Plan Mensual VIP",
+  "duracionDias": 30,
+  "precio": 30.00,
+  "activo": true
+}
+
+### --------------------------------------------------------
+### HU-04: INSCRIPCIÓN Y REGISTRO DE SOCIOS (RN-01, RN-02, RN-11)
+### --------------------------------------------------------
+
+### 15. Inscribir socio exitoso con cálculo inicial de vencimiento RN-11 (201)
+# @name inscribirSocio
+POST {{baseUrl}}/socios
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "nombre": "Juan Pérez",
+  "dui": "01234567-8",
+  "telefono": "7000-8888",
+  "planId": {{planId}}
+}
+
+@socioId = {{inscribirSocio.response.body.socio.id}}
+
+### 16. Inscribir segundo socio (201)
+POST {{baseUrl}}/socios
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "nombre": "María Rodríguez",
+  "dui": "08765432-1",
+  "telefono": "7555-1234",
+  "planId": {{planId}}
+}
+
+### 17. RN-01: Intentar registrar socio con DUI ya existente (409)
+POST {{baseUrl}}/socios
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "nombre": "Juan Duplicado",
+  "dui": "01234567-8",
+  "telefono": "7999-9999",
+  "planId": {{planId}}
+}
+
+### 18. Listar socios con cálculo dinámico de estado RN-02 y días restantes RN-13 (200)
+GET {{baseUrl}}/socios
+Authorization: Bearer {{authToken}}
+
+### 19. Buscar socio por nombre o DUI (200)
+GET {{baseUrl}}/socios?q=Juan
+Authorization: Bearer {{authToken}}
+
+### --------------------------------------------------------
+### HU-05: VERIFICADOR RÁPIDO DE ACCESO POR DUI (RN-02, RN-13)
+### --------------------------------------------------------
+
+### 20. Verificación de socio con membresía activa / por vencer: ACCESO PERMITIDO (200)
+GET {{baseUrl}}/socios/verificar/01234567-8
+Authorization: Bearer {{authToken}}
+
+### 21. Verificación de socio inexistente (404)
+GET {{baseUrl}}/socios/verificar/99999999-9
+Authorization: Bearer {{authToken}}
+
+### --------------------------------------------------------
+### HU-06: RENOVACIÓN ACUMULATIVA DE MEMBRESÍAS (RN-03, RN-12, RN-14)
+### --------------------------------------------------------
+
+### 22. Renovar membresía acumulando días a fecha futura (200)
+POST {{baseUrl}}/socios/{{socioId}}/renovar
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "planId": {{planId}}
+}
+
+### 23. Verificar que la renovación extendió la fecha de vencimiento (200)
+GET {{baseUrl}}/socios/{{socioId}}
+Authorization: Bearer {{authToken}}
+
+### --------------------------------------------------------
+### ENTREGA 3: HU-08 GESTOR DE CLASES COLECTIVAS (RN-15, RN-16)
+### --------------------------------------------------------
+
+### 24. Crear clase colectiva de Spinning (201)
+# @name crearClaseSpinning
+POST {{baseUrl}}/clases
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "nombreClase": "Spinning Neón Pro",
+  "coach": "Marcos Rivas",
+  "fechaHora": "2026-11-20 18:00:00",
+  "cupoMaximo": 15
+}
+
+@claseId = {{crearClaseSpinning.response.body.clase.id}}
+
+### 25. Listar todas las clases colectivas con cupos y % de ocupación RN-16 (200)
+GET {{baseUrl}}/clases
+Authorization: Bearer {{authToken}}
+
+### 26. Consultar asistentes iniciales de la clase (200)
+GET {{baseUrl}}/clases/{{claseId}}/asistentes
+Authorization: Bearer {{authToken}}
+
+### --------------------------------------------------------
+### HU-08B: INSCRIPCIÓN MANUAL DESDE RECEPCIÓN (RN-06, RN-07)
+### --------------------------------------------------------
+
+### 27. Inscribir socio manualmente desde recepción (201)
+# @name inscripcionManual
+POST {{baseUrl}}/clases/{{claseId}}/inscribir-socio
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "socioId": {{socioId}}
+}
+
+@reservaId = {{inscripcionManual.response.body.reserva.id}}
+
+### 28. RN-07: Intentar inscribir de nuevo al mismo socio en la misma clase (409)
+POST {{baseUrl}}/clases/{{claseId}}/inscribir-socio
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "socioId": {{socioId}}
+}
+
+### 29. Marcar check-in de asistencia de la reserva (200)
+PATCH {{baseUrl}}/clases/{{claseId}}/reservas/{{reservaId}}/asistencia
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "asistio": true
+}
+
+### --------------------------------------------------------
+### HU-07: PORTAL PÚBLICO DEL SOCIO (SIN CONTRASEÑA, RN-05)
+### --------------------------------------------------------
+
+### 30. Consultar carnet digital del socio por DUI (200)
+GET {{baseUrl}}/public/socios/01234567-8
+
+### 31. Consultar clases disponibles desde el portal del socio (200)
+GET {{baseUrl}}/public/socios/01234567-8/clases
+
+### 32. HU-09: Reservar clase colectiva desde el portal del cliente (201 o 409 si ya reservó)
+POST {{baseUrl}}/public/socios/08765432-1/reservar
+Content-Type: application/json
+
+{
+  "claseId": {{claseId}}
+}
+
+### --------------------------------------------------------
+### RN-17: QR DINÁMICO ANTI-FRAUDE (VALIDACIÓN DE TIMESTAMP)
+### --------------------------------------------------------
+
+### 33. Verificador con timestamp reciente de QR (< 60s) (200)
+GET {{baseUrl}}/socios/verificar/01234567-8?t=1731628800000
+Authorization: Bearer {{authToken}}
+
+### 34. Verificador con QR dinámico expirado (> 60s) (400)
+GET {{baseUrl}}/socios/verificar/01234567-8?t=1000000000000
+Authorization: Bearer {{authToken}}
+
+### --------------------------------------------------------
+### RN-18: REVOCACIÓN INSTANTÁNEA DE CREDENCIALES
+### --------------------------------------------------------
+
+### 35. Revocar credencial del socio al instante (200)
+PATCH {{baseUrl}}/socios/{{socioId}}/revocar
+Authorization: Bearer {{authToken}}
+
+### 36. Verificador con credencial revocada: CREDENCIAL REVOCADA (200, accesoPermitido: false)
+GET {{baseUrl}}/socios/verificar/01234567-8
+Authorization: Bearer {{authToken}}
+
+### 37. Intentar reservar clase con credencial revocada (403)
+POST {{baseUrl}}/public/socios/01234567-8/reservar
+Content-Type: application/json
+
+{
+  "claseId": {{claseId}}
+}
+
+### 38. Reactivar credencial del socio (200)
+PATCH {{baseUrl}}/socios/{{socioId}}/revocar
+Authorization: Bearer {{authToken}}
+
+### --------------------------------------------------------
+### HU-10: MÓDULO DE PROMOCIONES Y PROGRAMA DE REFERIDOS
+### --------------------------------------------------------
+
+### 39. Crear promoción global del gimnasio (201)
+# @name crearPromocion
+POST {{baseUrl}}/promociones
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "titulo": "2x1 en Renovación Black November",
+  "descripcion": "Trae a un amigo o renueva por 2 meses con 50% en el segundo mes",
+  "descuento": "50% en segundo mes",
+  "fechaFin": "2026-11-30",
+  "activa": true
+}
+
+@promocionId = {{crearPromocion.response.body.promocion.id}}
+
+### 40. Listar promociones para la administración (200)
+GET {{baseUrl}}/promociones
+Authorization: Bearer {{authToken}}
+
+### 41. Consultar promociones activas desde el portal del socio (200)
+GET {{baseUrl}}/public/socios/01234567-8/promociones
+
+### 42. Desactivar promoción (200)
+PATCH {{baseUrl}}/promociones/{{promocionId}}/toggle
+Authorization: Bearer {{authToken}}
+
+### --------------------------------------------------------
+### HU-12 / RN-19: CONTROL DE ACCESO POR ROLES (RBAC)
+### --------------------------------------------------------
+
+### 43. Crear cuenta de personal con rol 'entrenador' (201)
+POST {{baseUrl}}/auth/usuarios
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "nombre": "Entrenador Marcos",
+  "correo": "coach.marcos@ironpower.com",
+  "password": "Password123!",
+  "rol": "entrenador"
+}
+
+### 44. Listar empleados del gimnasio (200)
+GET {{baseUrl}}/auth/usuarios
+Authorization: Bearer {{authToken}}
+
+### --------------------------------------------------------
+### ENTREGA 4: HU-11 DASHBOARD DE MÉTRICAS E INGRESOS (RN-14, RN-16)
+### --------------------------------------------------------
+
+### 45. Consultar métricas generales e ingresos del mes (200)
+GET {{baseUrl}}/dashboard/metricas
+Authorization: Bearer {{authToken}}
+
+
